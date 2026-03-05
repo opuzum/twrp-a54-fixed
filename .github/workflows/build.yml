@@ -1,4 +1,4 @@
-name: Recovery Build
+name: Recovery Build (Max Space)
 
 on:
   workflow_dispatch:
@@ -10,9 +10,19 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Cleanup Space
+    - name: Maximize Build Space
       run: |
-        sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php /usr/local/lib/android
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf /etc/mysql
+        sudo rm -rf /etc/php
+        docker image prune -a -f
+        df -h # Shows how much space we cleared
+
+    - name: Install Dependencies
+      run: |
         sudo apt update
         sudo apt install bc build-essential zip curl libstdc++6 git python3 python-is-python3 libxml2-utils wget openjdk-17-jdk -y
 
@@ -23,18 +33,16 @@ jobs:
         chmod a+x ~/bin/repo
         echo "$HOME/bin" >> $GITHUB_PATH
 
-    - name: Sync Source (High Speed)
+    - name: Sync Source (Slim)
       run: |
         mkdir ~/twrp
         cd ~/twrp
-        # --depth=1 is the secret sauce to stop the 58-minute stall
         repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
         repo sync -c -j$(nproc) --force-sync --no-clone-bundle --no-tags
 
     - name: Clone Device Tree
       run: |
         cd ~/twrp
-        # Using depth=1 here too for speed
         git clone --depth=1 https://github.com/Nitorac/android_device_samsung_a54x device/samsung/a54x
 
     - name: Build TWRP
@@ -50,4 +58,3 @@ jobs:
       with:
         name: TWRP-A54-Image
         path: /home/runner/twrp/out/target/product/a54x/recovery.img
-
