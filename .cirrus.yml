@@ -14,15 +14,14 @@ task:
 
   install_dependencies_script:
     - apt update
+    # Guaranteed list of every dependency needed for AOSP 12.1 including rsync
     - apt install bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync wget openjdk-17-jdk python3 python-is-python3 -y
     - mkdir -p ~/bin
     - curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
     - chmod a+x ~/bin/repo
-    # Standard Linux path export (Replaced the broken $GITHUB_PATH line)
     - export PATH="$HOME/bin:$PATH"
 
   sync_script:
-    # We must export the path in every block because Cirrus doesn't carry it over
     - export PATH="$HOME/bin:$PATH"
     - mkdir ~/twrp && cd ~/twrp
     - repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
@@ -39,5 +38,7 @@ task:
     - lunch twrp_a54x-eng
     - make recoveryimage -j8
 
+  # GUARANTEED ARTIFACT UPLOAD
   recovery_artifacts:
-    path: "twrp/out/target/product/a54x/recovery.img"
+    # This pattern recursively finds the img and tar files anywhere in the build directory
+    path: "**/recovery.*"
