@@ -1,30 +1,28 @@
 task:
   name: Build TWRP A54
-  # Using the max allowed resources for free public repos
   container:
     image: ubuntu:22.04
     cpu: 8
     memory: 24G
   
-  # Set a 2-hour timeout (the hard limit for free tasks)
   timeout_in: 120m
 
   env:
     ALLOW_MISSING_DEPENDENCIES: "true"
-    # Optional: Enable ccache for faster subsequent builds if you add a cache block
     USE_CCACHE: 1
     CCACHE_SIZE: "5G"
 
   install_dependencies_script:
     - apt update
-    # Added rsync and other critical build tools for Ubuntu 22.04
     - apt install bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync wget openjdk-17-jdk python3 python-is-python3 -y
     - mkdir -p ~/bin
     - curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
     - chmod a+x ~/bin/repo
-    - echo "$HOME/bin" >> $GITHUB_PATH
+    # Standard Linux path export (Replaced the broken $GITHUB_PATH line)
+    - export PATH="$HOME/bin:$PATH"
 
   sync_script:
+    # We must export the path in every block because Cirrus doesn't carry it over
     - export PATH="$HOME/bin:$PATH"
     - mkdir ~/twrp && cd ~/twrp
     - repo init -u https://github.com/minimal-manifest-twrp/platform_manifest_twrp_aosp.git -b twrp-12.1 --depth=1
@@ -39,7 +37,6 @@ task:
     - cd ~/twrp
     - . build/envsetup.sh
     - lunch twrp_a54x-eng
-    # The build now has rsync available for the packaging step
     - make recoveryimage -j8
 
   recovery_artifacts:
