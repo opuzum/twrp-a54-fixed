@@ -1,21 +1,28 @@
 task:
   name: Build TWRP A54
-  # Use a powerful container with enough RAM and CPU
+  # Using the max allowed resources for free public repos
   container:
     image: ubuntu:22.04
     cpu: 8
     memory: 24G
+  
+  # Set a 2-hour timeout (the hard limit for free tasks)
+  timeout_in: 120m
 
   env:
-    # Environment variables for the build
     ALLOW_MISSING_DEPENDENCIES: "true"
+    # Optional: Enable ccache for faster subsequent builds if you add a cache block
+    USE_CCACHE: 1
+    CCACHE_SIZE: "5G"
 
   install_dependencies_script:
     - apt update
-    - apt install bc build-essential zip curl libstdc++6 git python3 python-is-python3 libxml2-utils wget openjdk-17-jdk -y
+    # Added rsync and other critical build tools for Ubuntu 22.04
+    - apt install bc bison build-essential ccache curl flex g++-multilib gcc-multilib git gnupg gperf imagemagick lib32ncurses5-dev lib32readline-dev lib32z1-dev libelf-dev liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync wget openjdk-17-jdk python3 python-is-python3 -y
     - mkdir -p ~/bin
     - curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
     - chmod a+x ~/bin/repo
+    - echo "$HOME/bin" >> $GITHUB_PATH
 
   sync_script:
     - export PATH="$HOME/bin:$PATH"
@@ -32,9 +39,8 @@ task:
     - cd ~/twrp
     - . build/envsetup.sh
     - lunch twrp_a54x-eng
+    # The build now has rsync available for the packaging step
     - make recoveryimage -j8
 
-  # This tells Cirrus where to find your finished file
   recovery_artifacts:
-    path: "~/twrp/out/target/product/a54x/recovery.img"
-
+    path: "twrp/out/target/product/a54x/recovery.img"
